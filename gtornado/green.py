@@ -167,8 +167,9 @@ class AsyncSocketModule(AsyncSocket):
 
 
 class Pool(object):
-    def __init__(self, max_size=-1):
+    def __init__(self, max_size=-1, params={}):
         self._maxsize = max_size
+        self._conn_params = params
         self._pool = []
         self._started = False
         self._ioloop = IOLoop.current()

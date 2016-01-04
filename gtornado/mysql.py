@@ -2,9 +2,8 @@
 from __future__ import absolute_import
 import sys
 import socket
-from tornado.ioloop import IOLoop
 from pymysql.connections import Connection
-from gtornado import AsyncSocket, green
+from gtornado import AsyncSocket, green, utils
 
 
 class AsyncConnection(Connection):
@@ -40,69 +39,29 @@ class AsyncConnection(Connection):
 
 
 class MySQLConnectionPool(green.Pool):
-    def __init__(self, max_size=-1):
-        self._maxsize = max_size
-        self._pool = []
-        self._started = False
-        self._ioloop = IOLoop.current()
-        self._event = green.Event()
-        self._ioloop.add_future(
-                                green.spawn(self.start), 
-                                lambda future: future)
+    __metaclass__ = utils.Singleton
+
+    def __init__(self, max_size=-1, mysql_params={}):
+        super(MySQLConnectionPool, self).__init__(max_size, mysql_params)
 
     def create_raw_conn(self):
         return AsyncConnection(
-                host="10.86.11.116", 
-                port=3306,
-                user="root",
-                db="mywork",
-                password="powerall",
-                charset="utf8"
+                host=self._conn_params["host"],
+                port=self._conn_params["port"],
+                user=self._conn_params["username"],
+                db=self._conn_params["db"],
+                password=self._conn_params["password"],
+                charset=self._conn_params.get("charset", "utf8")
                 )
- 
-    def init_pool(self):
-        for index in range(self._maxsize):
-            conn = self.create_raw_conn()
-            self._pool.append(conn)
-
-    @property
-    def size(self):
-        return len(self._pool)
-
-    def get_conn(self):
-        if self.size > 0:
-            return self._pool.pop(0)
-        else:
-            raise Exception("no available connections", self.size)
-
-    def return_back(self, conn):
-        self._pool.append(conn)
-
-    def quit(self):
-        self._started = False
-        self._event.set()
-
-    def _close_all(self):
-        for conn in self._pool:
-            conn.close()
-        self._pool =  None           
-
-    def start(self):
-        self.init_pool()
-        self._started = True
-        self._event.wait()
-        self._close_all()
-
-
-ConnectionPool = MySQLConnectionPool(100)
 
 
 class ConnectionProxy(object):
     def __init__(self, raw_conn):
         self._raw_conn = raw_conn
+        self._pool = MySQLConnectionPool()
 
     def close(self):
-        ConnectionPool.release(self._raw_conn)
+        self._pool.release(self._raw_conn)
 
     def __getattr__(self, key):
         if key == "close":
@@ -112,7 +71,8 @@ class ConnectionProxy(object):
 
 
 def connect(*args, **kwargs):
-    raw_conn = ConnectionPool.get_conn()
+    pool = MySQLConnectionPool()
+    raw_conn = pool.get_conn()
     return ConnectionProxy(raw_conn)
 
 def patch_pymysql():

@@ -1,22 +1,22 @@
 # -*- coding:utf-8 -*-
-from gtornado.mysql import ConnectionPool
+from gtornado.mysql import MySQLConnectionPool
 
-columns = ("id", "name", "grade_id", "status", "createuser", "createtime")
+ConnectionPool = MySQLConnectionPool()
+
+columns = ("id", "phone", "home", "office")
 
 def query():
     connection = None
     try:
         connection = ConnectionPool.get_conn()     
         with connection.cursor() as cursor:
-            sql = "select * from banji"
+            sql = "select * from address_book"
             cursor.execute(sql)
             rs = []
             while 1:
                 result = cursor.fetchmany()
                 if result:
-                    row = result[0]
-                    row = dict(zip(columns, row))
-                    row["createtime"] = str(row["createtime"])
+                    row = dict(zip(columns, result[0]))
                     rs.append(row)
                 else:
                     break

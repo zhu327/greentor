@@ -1,23 +1,28 @@
 # -*- coding:utf-8 -*-
+import sys
 from tornado.ioloop import IOLoop
 from tornado.gen import coroutine
 from tornado.web import RequestHandler, Application
-import green
+from gtornado import green
+
 import pymysql
 pymysql.install_as_MySQLdb()
+
 from gtornado.mysql import patch_pymysql
 patch_pymysql()
-from gtornado.test_pure_mysql import query
-import sys
-# import greenlet
 
-# def trace_green(event, args):
-    # print(event, args)
-    # return
+from gtornado.mysql import MySQLConnectionPool
 
+params = {
+        "host":"10.86.11.116", 
+        "port":3306, 
+        "username":"root", 
+        "password":"powerall", 
+        "db":"mywork"}
 
-# greenlet.settrace(trace_green)
+ConnectionPool = MySQLConnectionPool(max_size=100, mysql_params=params)
 
+from test_pure_mysql import query
 
 import orm_storm
 def query_by_phone():
@@ -44,13 +49,6 @@ class PureHandler(RequestHandler):
         result = yield green.spawn(query)
         self.write(dict(row=result))
 
-import orm_sqlalchemy
-class OrmSqlHandler(RequestHandler):
-    @coroutine
-    def get(self):
-        result = yield green.spawn(orm_sqlalchemy.test)
-        self.write(dict(rows=result))
-
 
 import test_memcache
 class MemCacheHandler(RequestHandler):
@@ -62,7 +60,6 @@ class MemCacheHandler(RequestHandler):
 app = Application([
                     (r"/async/orm/pure", PureHandler),
                     (r"/async/orm/storm", OrmTestHandler),
-                    (r"/async/orm/sqlalchemy", OrmSqlHandler),
                     (r"/async/memcache", MemCacheHandler),
                   ])
 
