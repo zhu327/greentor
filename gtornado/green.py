@@ -61,6 +61,10 @@ class Waiter(object):
     def get(self):
         return self._main.switch()
 
+    def clear(self):
+        pass
+
+
 def sleep(seconds):
     waiter = Waiter()
     unique = object()
@@ -118,6 +122,30 @@ class Event(object):
     def _notify(self):
         for waiter in self._waiter:
             waiter(self)
+
+
+class Watcher(object):
+    #将当前fd以events注册到ioloop中，当事件发生时，调用回调函数唤醒watcher
+    def __init__(self, fd, events):
+        self._fd = fd
+        self._watched_event = IOLoop.READ if events == 1 else IOLoop.WRITE
+        self._value = None
+        self._greenlet = greenlet.getcurrent()
+        self._main = self._greenlet.parent
+        self._ioloop = IOLoop.current()
+        self._callback = None
+        self._iohandler = None
+
+    def start(self, callback, args):
+        self._callback = callback
+        self._value = args
+        self._ioloop.add_handler(self._fd, self._handle_event, self._watched_event)
+
+    def _handle_event(self, fd, events):
+        self._callback(self._value)
+
+    def stop(self):
+        self._ioloop.remove_handler(self._fd)
 
 
 class AsyncSocket(object):
