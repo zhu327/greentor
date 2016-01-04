@@ -22,7 +22,6 @@ params = {
 
 ConnectionPool = MySQLConnectionPool(max_size=100, mysql_params=params)
 
-from test_pure_mysql import query
 
 import orm_storm
 def query_by_phone():
@@ -43,10 +42,12 @@ class OrmTestHandler(RequestHandler):
         result = yield green.spawn(query_by_phone)
         self.write(dict(rows=result))
 
+
+import test_pure_mysql
 class PureHandler(RequestHandler):
     @coroutine
     def get(self):
-        result = yield green.spawn(query)
+        result = yield green.spawn(test_pure_mysql.query)
         self.write(dict(row=result))
 
 
