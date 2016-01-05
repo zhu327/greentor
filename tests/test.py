@@ -14,7 +14,7 @@ patch_pymysql()
 from gtornado.mysql import MySQLConnectionPool
 
 params = {
-        "host":"127.0.0.1", 
+        "host":"10.86.11.116", 
         "port":3306, 
         "username":"root", 
         "password":"powerall", 
