@@ -4,6 +4,7 @@
 #what **gtornado** can do?
 1. make orm async seamless
 2. make blockio async in tornado
+3. adapte greenify for gtornado https://github.com/alex8224/greenify
 
 # requirement
 1. greenlet

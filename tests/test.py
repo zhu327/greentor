@@ -14,13 +14,13 @@ patch_pymysql()
 from gtornado.mysql import MySQLConnectionPool
 
 params = {
-        "host":"10.86.11.116", 
+        "host":"127.0.0.1", 
         "port":3306, 
         "username":"root", 
         "password":"powerall", 
         "db":"mywork"}
 
-ConnectionPool = MySQLConnectionPool(max_size=100, mysql_params=params)
+ConnectionPool = MySQLConnectionPool(max_size=200, mysql_params=params)
 
 
 import orm_storm
@@ -58,10 +58,17 @@ class MemCacheHandler(RequestHandler):
         result = yield green.spawn(test_memcache.test)
         self.write(result)
 
+class HelloWorldHandler(RequestHandler):
+    @coroutine
+    def get(self):
+        self.write("HelloWorld!")
+
+
 app = Application([
                     (r"/async/orm/pure", PureHandler),
                     (r"/async/orm/storm", OrmTestHandler),
                     (r"/async/memcache", MemCacheHandler),
+                    (r"/async/", HelloWorldHandler),
                   ])
 
 import tornado.httpserver
