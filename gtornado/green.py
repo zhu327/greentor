@@ -25,6 +25,10 @@ if not IS_PYPY:
             print(event, args)
         greenlet.settrace(trace)    
 
+
+__all__ = ("IS_PYPY", "spawn", "AsyncSocket", "GreenTask", "synclize", "Waiter", "sleep", "Timeout", "Event", "Watcher", "Pool")
+
+
 class Hub(object):
     def __init__(self):
         self._greenlet = greenlet.getcurrent()
@@ -216,7 +220,6 @@ class Event(object):
 
 
 class Watcher(object):
-    #将当前fd以events注册到ioloop中，当事件发生时，调用回调函数唤醒watcher
     def __init__(self, fd, events):
         self._fd = fd
         self._watched_event = IOLoop.READ if events == 1 else IOLoop.WRITE
@@ -261,28 +264,6 @@ class AsyncSocket(object):
 
     def set_nodelay(self, flag):
         self._iostream.set_nodelay(flag)
-
-
-class AsyncSocketModule(AsyncSocket):
-    AF_INET = socket.AF_INET
-    SOCK_STREAM = socket.SOCK_STREAM
-    def __init__(self, sock_inet, sock_type):
-        self._sock = socket.socket(sock_inet, sock_type)
-        super(AsyncSocketModule, self).__init__(self._sock)
-
-    @staticmethod
-    def socket(sock_inet, sock_type):
-        return AsyncSocketModule(sock_inet, sock_type)
-
-    def settimeout(self, timeout):
-        pass
-
-    def setsockopt(self, proto, option, value):
-        self.set_nodelay(value)
-
-    def recv(self, nbytes):
-        return self.read(nbytes, partial=True)
-
 
 
 class Pool(object):

@@ -3,6 +3,9 @@ from __future__ import absolute_import
 from gtornado import AsyncSocket, green
 import socket
 
+__all__ = ("MemCachePool", )
+
+
 class AsyncSocketModule(AsyncSocket):
     AF_INET = socket.AF_INET
     SOCK_STREAM = socket.SOCK_STREAM
@@ -29,7 +32,8 @@ from pymemcache.client.base import Client
 
 class MemCachePool(green.Pool):
     def create_raw_conn(self):
-        return Client(("127.0.0.1", 11211), socket_module=AsyncSocketModule)
+        servers = self._conn_params["servers"]
+        return Client(servers, socket_module=AsyncSocketModule)
 
     def _close_all(self):
         for conn in self._pool:

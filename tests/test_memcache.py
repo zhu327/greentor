@@ -1,7 +1,7 @@
 # -*- coding:utf-8 -*-
 from gtornado.memcache import MemCachePool
-
-memcache_pool = MemCachePool(200)
+servers = {"servers":("127.0.0.1", 11211)}
+memcache_pool = MemCachePool(200, servers)
 
 def test():
     client = None

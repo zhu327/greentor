@@ -31,7 +31,6 @@ class OrmTestHandler(RequestHandler):
         result = yield green.spawn(AddressBookDao.query_by_phone, u"13800138000")
         self.write(dict(rows=result))
 
-
 import test_pure_mysql
 class PureHandler(RequestHandler):
     @coroutine

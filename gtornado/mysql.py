@@ -5,6 +5,7 @@ import socket
 from pymysql.connections import Connection
 from gtornado import AsyncSocket, green, utils
 
+__all__ = ("AsyncConnection", "MySQLConnectionPool", "patch_pymysql")
 
 class AsyncConnection(Connection):
     def __init__(self, *args, **kwargs):
