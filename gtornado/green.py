@@ -247,7 +247,7 @@ class AsyncSocket(object):
         self._iostream = IOStream(sock)
     
     @synclize
-    def connect(self, address):
+    def connect(self, address, timeout=None):
         yield self._iostream.connect(address)
 
     #@synclize
@@ -264,7 +264,18 @@ class AsyncSocket(object):
 
     def set_nodelay(self, flag):
         self._iostream.set_nodelay(flag)
+    
+    def shutdown(self, direction):
+        self._iostream.fileno().shutdown(direction)
 
+    def recv_into(self, buff):
+        expected_rbytes = len(buff)
+        data = self.read(expected_rbytes, True)
+        srcarray = bytearray(data)
+        nbytes = len(srcarray)
+        buff[0:nbytes] = srcarray
+        return nbytes
+        
 
 class Pool(object):
     def __init__(self, max_size=-1, params={}):
