@@ -1,5 +1,5 @@
 # gTornado
-**gtornado** add greenify support to tornado. inspired by **motor and gevent**
+**gTornado** add greenify support to tornado. inspired by **motor and gevent**
 
 # BUild Status
 [![Build Status](https://travis-ci.org/alex8224/gtornado.svg?branch=master)](https://travis-ci.org/alex8224/gtornado)
