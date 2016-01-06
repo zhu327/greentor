@@ -9,8 +9,8 @@ from tornado.gen import coroutine
 from tornado.web import RequestHandler, Application
 from gtornado import green
 
-# greenify.patch_lib("/usr/lib/x86_64-linux-gnu/libmemcached.so")
-greenify.patch_lib("/usr/lib/x86_64-linux-gnu/libmysqlclient.so.18.0.0")
+greenify.patch_lib("/usr/lib/x86_64-linux-gnu/libmemcached.so")
+
 
 class MCPool(green.Pool):
     def create_raw_conn(self):
