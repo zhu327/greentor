@@ -1,5 +1,6 @@
 # -*- coding:utf-8 -*-
 from __future__ import absolute_import
+import sys
 import time
 import socket
 import greenlet
@@ -9,6 +10,102 @@ from tornado.ioloop import IOLoop
 from tornado.iostream import IOStream
 from tornado.concurrent import Future
 from tornado.gen import coroutine, Return
+
+IS_PYPY = False
+try:
+    import __pypy__
+    __pypy__
+    IS_PYPY = True
+except:
+    pass
+
+if not IS_PYPY:
+    def enable_debug():
+        def trace(event, args):
+            print(event, args)
+        greenlet.settrace(trace)    
+
+class Hub(object):
+    def __init__(self):
+        self._greenlet = greenlet.getcurrent()
+        self._ioloop = IOLoop.current()
+
+    @property
+    def greenlet(self):
+        return self._greenlet
+
+    def switch(self):
+        self._greenlet.switch()
+
+    @property
+    def ioloop(self):
+        return self._ioloop
+
+    def run_later(self, deadline, callback, *args, **kwargs):
+        return self.ioloop.add_timeout(time.time() + deadline, 
+                                      callback, *args, **kwargs)
+
+    def run_callback(self, callback, *args, **kwargs):
+        self.ioloop.add_callback(callback, *args, **kwargs)
+            
+
+hub = Hub()
+
+def get_hub():
+    return hub
+
+
+class GreenTask(greenlet.greenlet):
+    def __init__(self, run, *args, **kwargs):
+        super(GreenTask, self).__init__()
+        self._run = run
+        self._args = args
+        self._kwargs = kwargs
+        self._future = Future()
+        self._result = None
+        self._exc_info = ()
+  
+    @property
+    def args(self):
+        return self._args
+
+    @property
+    def kwargs(self):
+        return self._kwargs
+
+    def run(self):
+        try:
+            timeout = self.kwargs.pop("timeout", 0)
+            if timeout:
+                timer = Timeout(timeout)
+                timer.start()
+            self._result = self._run(*self.args, **self.kwargs)
+            self._future.set_result(self._result)
+        except:
+            self._exc_info = sys.exc_info()
+            self._future.set_exc_info(self._exc_info)
+        finally:
+            if timeout:
+                timer.cancel()
+
+    def start(self):
+        self.switch()
+
+    def __str__(self):
+        func_name = "%s of %s " % (self._run.__name__, self._run.__module__)
+        return "<greenlet %s at %s>" % (func_name, hex(id(self)))
+
+    def __repr__(self):
+        return self.__str__()
+
+    def wait(self):
+        return self._future
+
+    @classmethod
+    def spawn(cls_green, *args, **kwargs):
+        task = cls_green(*args, **kwargs)
+        task.start()
+        return task
 
 
 def synclize(func):
@@ -32,16 +129,7 @@ def synclize(func):
     return _sync_call        
 
 def spawn(callable_obj, *args, **kwargs):
-    future = Future()
-    def inner_call():
-        try:
-            result = callable_obj(*args, **kwargs)
-            future.set_result(result)
-        except Exception as ex:
-            future.set_exception(ex)
-    greenlet.greenlet(inner_call).switch()
-    return future
-
+    return GreenTask.spawn(callable_obj, *args, **kwargs).wait()
 
 class Waiter(object):
     def __init__(self):
@@ -80,18 +168,21 @@ class Timeout(object):
         self._greenlet = greenlet.getcurrent()
         self._ex = ex
         self._callback = None
-        self._deadline = time.time() + deadline
+        self._deadline = deadline
+        self._delta = time.time() + deadline
         self._ioloop = IOLoop.current()
 
     def start(self, callback=None):
+        errmsg = "%s timeout, deadline is %d seconds" % (
+                str(self._greenlet), self._deadline)
         if callback:
-            self._callback = self._ioloop.add_timeout(self._deadline, 
+            self._callback = self._ioloop.add_timeout(self._delta, 
                                                       callback,
-                                                      self._ex("timeout..."))
+                                                      self._ex(errmsg))
         else:
-            self._callback = self._ioloop.add_timeout(self._deadline, 
+            self._callback = self._ioloop.add_timeout(self._delta, 
                                                       self._greenlet.throw,
-                                                      self._ex("timeout,,,"))
+                                                      self._ex(errmsg))
 
     def cancel(self):
         assert self._callback, "Timeout not started"

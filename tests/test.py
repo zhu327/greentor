@@ -23,23 +23,12 @@ params = {
 ConnectionPool = MySQLConnectionPool(max_size=200, mysql_params=params)
 
 
-import orm_storm
-def query_by_phone():
-    phone = u"13800138000"
-    addrbook = orm_storm.AddressBookDao()
-    addr_book = addrbook.query_by_phone(phone)
-    addressbook = {}
-    addressbook["id"] = addr_book.id
-    addressbook["phone"] = addr_book.phone
-    addressbook["home"] = addr_book.home
-    addressbook["office"] = addr_book.office
-    return addressbook
-
+from orm_storm import AddressBookDao
 
 class OrmTestHandler(RequestHandler):
     @coroutine
     def get(self):
-        result = yield green.spawn(query_by_phone)
+        result = yield green.spawn(AddressBookDao.query_by_phone, u"13800138000")
         self.write(dict(rows=result))
 
 
@@ -47,7 +36,7 @@ import test_pure_mysql
 class PureHandler(RequestHandler):
     @coroutine
     def get(self):
-        result = yield green.spawn(test_pure_mysql.query)
+        result = yield green.spawn(test_pure_mysql.query) 
         self.write(dict(row=result))
 
 
@@ -59,8 +48,12 @@ class MemCacheHandler(RequestHandler):
         self.write(result)
 
 class HelloWorldHandler(RequestHandler):
+    def wait(self):
+        return 1
+
     @coroutine
     def get(self):
+        #yield green.spawn(self.wait)
         self.write("HelloWorld!")
 
 

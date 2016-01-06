@@ -26,14 +26,13 @@ class StormStore(object):
 
 class AddressBookDao(object):
 
-    def all(self):
+    @staticmethod
+    def query_by_phone(phone):
         with StormStore() as store:
-            return store.find(AddressBook).order_by(AddressBook.id)
-
-    def query_by_phone(self, phone):
-        with StormStore() as store:
-            result = store.find(AddressBook, AddressBook.phone==phone).one()
-            return result
-
-
-
+            addr_book = store.find(AddressBook, AddressBook.phone==phone).one()
+            addressbook = {}
+            addressbook["id"] = addr_book.id
+            addressbook["phone"] = addr_book.phone
+            addressbook["home"] = addr_book.home
+            addressbook["office"] = addr_book.office
+            return addressbook

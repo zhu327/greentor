@@ -2,7 +2,6 @@
 from gtornado.mysql import MySQLConnectionPool
 
 ConnectionPool = MySQLConnectionPool()
-
 columns = ("id", "phone", "home", "office")
 
 def query():
