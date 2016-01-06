@@ -2,7 +2,6 @@
 from __future__ import absolute_import
 import sys
 import time
-import socket
 import greenlet
 from functools import wraps
 
