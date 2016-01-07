@@ -10,7 +10,7 @@ import MySQLdb.cursors
 import greenify
 greenify.greenify()
 
-# green.enable_debug()
+green.enable_debug()
 assert greenify.patch_lib("/usr/lib/x86_64-linux-gnu/libmysqlclient.so")
 
 conn_params = {
@@ -55,7 +55,7 @@ def test_concurrent_wait():
 
 @coroutine
 def start():
-    # yield [green.spawn(test_select) for _ in range(1000)]
-    yield [green.spawn(test_concurrent_wait) for _ in range(100)]
+    yield [green.spawn(test_select) for _ in range(100)]
+    # yield [green.spawn(test_concurrent_wait) for _ in range(100)]
 
 IOLoop.instance().run_sync(start)

@@ -18,14 +18,35 @@ try:
 except:
     pass
 
-if not IS_PYPY:
-    def enable_debug():
-        def trace(event, args):
-            print(event, args)
-        greenlet.settrace(trace)    
+def enable_debug():
+    if IS_PYPY:
+        sys.stderr.write("settrace api unsupported on pypy")
+        sys.stderr.flush()
+        return
+
+    import inspect
+    def trace_green(event, args):
+        src, target = args
+        if event == "switch":
+            print("from %s switch to %s" % (src, target))
+        elif event == "throw":
+            print("from %s throw exception to %s" % (src, target))
+
+        if src.gr_frame:
+            tracebacks = inspect.getouterframes(src.gr_frame)
+            buff = []
+            for traceback in tracebacks:
+                srcfile, lineno, func_name, codesample = traceback[1:-1]
+                trace_line = '''File "%s", line %d, in %s\n%s '''
+                buff.append(trace_line % (srcfile, lineno, func_name, "".join(codesample)))
+
+            print("".join(buff))
+     
+    greenlet.settrace(trace_green)    
 
 
-__all__ = ("IS_PYPY", "spawn", "AsyncSocket", "GreenTask", "synclize", "Waiter", "sleep", "Timeout", "Event", "Watcher", "Pool")
+__all__ = ("IS_PYPY", "spawn", "AsyncSocket", "GreenTask", "synclize", 
+            "Waiter", "sleep", "Timeout", "Event", "Watcher", "Pool")
 
 
 class Hub(object):
