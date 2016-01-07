@@ -10,8 +10,8 @@
 3. adapte greenify for gTornado https://github.com/alex8224/greenify 
 
 #Tested C library
-1. libmysqlclient
-2. libmemcache.so
+1. libmysqlclient.so
+2. libmemcached.so
 
 # Requirement
 1. greenlet
