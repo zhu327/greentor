@@ -1,9 +1,8 @@
 # -*- coding:utf-8 -*-
 from __future__ import absolute_import
-import sys
 import socket
 from redis.connection import Connection, ConnectionPool
-from gtornado import AsyncSocket, green, utils
+from gtornado import AsyncSocket
 
 __all__ = ("RedisConnectionPool", )
 
@@ -33,7 +32,6 @@ class AsyncRedisConnection(Connection):
 
                 # connect
                 iostream.connect(socket_address, self.socket_connect_timeout)
-
                 return iostream
 
             except socket.error as _:

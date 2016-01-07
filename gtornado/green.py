@@ -258,6 +258,9 @@ class AsyncSocket(object):
         buff = yield self._iostream.read_bytes(nbytes, partial=partial)
         raise Return(buff)
 
+    def recv(self, nbytes):
+        return self.read(nbytes, partial=True)
+
     def close(self):
         self._iostream.close()
 
@@ -265,7 +268,8 @@ class AsyncSocket(object):
         self._iostream.set_nodelay(flag)
     
     def shutdown(self, direction):
-        self._iostream.fileno().shutdown(direction)
+        if self._iostream.fileno():
+            self._iostream.fileno().shutdown(direction)
 
     def recv_into(self, buff):
         expected_rbytes = len(buff)
