@@ -17,7 +17,7 @@ params = {
         "host":"10.86.11.116", 
         "port":3306, 
         "username":"root", 
-        "password":"powerall", 
+        "password":"123456", 
         "db":"mywork"}
 
 ConnectionPool = MySQLConnectionPool(max_size=200, mysql_params=params)
