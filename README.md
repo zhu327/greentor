@@ -7,7 +7,11 @@
 #What **gTornado** can do?
 1. make orm async seamless
 2. make blockio async in tornado
-3. adapte greenify for gtornado https://github.com/alex8224/greenify
+3. adapte greenify for gTornado https://github.com/alex8224/greenify 
+
+#Tested C library
+1. libmysqlclient
+2. libmemcache.so
 
 # Requirement
 1. greenlet
