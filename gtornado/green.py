@@ -1,6 +1,7 @@
 # -*- coding:utf-8 -*-
 from __future__ import absolute_import
 import sys
+import socket
 import time
 import greenlet
 from functools import wraps
@@ -9,6 +10,8 @@ from tornado.ioloop import IOLoop
 from tornado.iostream import IOStream
 from tornado.concurrent import Future
 from tornado.gen import coroutine, Return
+from tornado.netutil import Resolver
+
 
 IS_PYPY = False
 try:
@@ -17,6 +20,9 @@ try:
     IS_PYPY = True
 except:
     pass
+
+def set_resolver(resolver):
+    Resolver.configure(resolver)
 
 def enable_debug():
     if IS_PYPY:
@@ -265,10 +271,17 @@ class Watcher(object):
 class AsyncSocket(object):
     def __init__(self, sock):
         self._iostream = IOStream(sock)
+        self._resolver = Resolver()
     
     @synclize
     def connect(self, address, timeout=None):
-        yield self._iostream.connect(address)
+        host, port = address
+        resolved_addrs = yield self._resolver.resolve(host, port, family=socket.AF_INET)
+        print(resolved_addrs)
+        for addr in resolved_addrs:
+            family, host_port = addr
+            yield self._iostream.connect(host_port)
+            break
 
     #@synclize
     def sendall(self, buff):
@@ -282,12 +295,24 @@ class AsyncSocket(object):
     def recv(self, nbytes):
         return self.read(nbytes, partial=True)
 
+    @synclize
+    def readline(self, max_bytes=-1):
+        if max_bytes > 0:
+            buff = yield self._iostream.read_until('\n', max_bytes=max_bytes)
+        else:
+            buff = yield self._iostream.read_until('\n')
+        raise Return(buff)
+
     def close(self):
         self._iostream.close()
 
     def set_nodelay(self, flag):
         self._iostream.set_nodelay(flag)
     
+
+    def settimeout(self, timeout):
+        pass
+
     def shutdown(self, direction):
         if self._iostream.fileno():
             self._iostream.fileno().shutdown(direction)
@@ -299,7 +324,10 @@ class AsyncSocket(object):
         nbytes = len(srcarray)
         buff[0:nbytes] = srcarray
         return nbytes
-        
+
+    def makefile(self, mode, other):
+        return self
+
 
 class Pool(object):
     def __init__(self, max_size=-1, params={}):
