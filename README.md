@@ -5,7 +5,7 @@
 **greenify** https://github.com/douban/greenify
 
 # Build Status
-[![Build Status](https://travis-ci.org/alex8224/gtornado.svg?branch=master)](https://travis-ci.org/alex8224/gtornado)
+[![Build Status](https://travis-ci.org/alex8224/gTornado.svg?branch=0.1)](https://travis-ci.org/alex8224/gTornado)
 
 #What **gTornado** can do?
 1. make orm async seamless
