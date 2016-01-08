@@ -11,14 +11,18 @@ pool = RedisConnectionPool(host="localhost", port=18000, db=0)
 class SubHandler(RequestHandler):
 
     def listen(self, channel):
-        print("listen pub for channel %s" % channel)
         client = StrictRedis(connection_pool=pool)
         pubsub = client.pubsub()
-        pubsub.subscribe(channel)
-        for item in pubsub.listen():
-            data = item["data"]
-            if data != 1L:
-                return data
+        try:
+            pubsub.subscribe(channel)
+            for item in pubsub.listen():
+                data = item["data"]
+                if data != 1L:
+                    return data
+        except:
+            raise
+        finally:
+            pubsub.close()
 
     @coroutine
     def get(self):
