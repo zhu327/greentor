@@ -10,12 +10,12 @@ import MySQLdb.cursors
 import greenify
 greenify.greenify()
 
-green.enable_debug()
+#green.enable_debug()
 assert greenify.patch_lib("/usr/lib/x86_64-linux-gnu/libmysqlclient.so")
 
 conn_params = {
-                "host": "10.86.11.116", "port":3306, 
-                "user": "root", "passwd": "123456",
+                "host": "10.0.2.15", "port":3306, 
+                "user": "root", "passwd": "powerall",
                 "db": "mywork", "charset": "utf8"
                 }
 
@@ -44,7 +44,7 @@ def test_concurrent_wait():
     try:
         db = MySQLdb.connect(**conn_params)
         cursor = db.cursor()
-        cursor.execute("select sleep(2)")
+        cursor.execute("select sleep(1)")
         print("done")
         cursor.close()
     except:
@@ -55,7 +55,7 @@ def test_concurrent_wait():
 
 @coroutine
 def start():
-    yield [green.spawn(test_select) for _ in range(100)]
-    # yield [green.spawn(test_concurrent_wait) for _ in range(100)]
+    #yield [green.spawn(test_select) for _ in range(100)]
+    yield [green.spawn(test_concurrent_wait) for _ in range(1000)]
 
 IOLoop.instance().run_sync(start)

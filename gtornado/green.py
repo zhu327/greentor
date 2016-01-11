@@ -272,16 +272,34 @@ class AsyncSocket(object):
     def __init__(self, sock):
         self._iostream = IOStream(sock)
         self._resolver = Resolver()
-    
+        self._readtimeout = 0
+        self._connecttimeout = 0
+   
+    def set_readtimeout(self, timeout):
+        self._readtimeout = timeout
+
+    def set_connecttimeout(self, timeout):
+        self._connecttimeout = timeout
+
     @synclize
-    def connect(self, address, timeout=None):
+    def connect(self, address):
         host, port = address
-        resolved_addrs = yield self._resolver.resolve(host, port, family=socket.AF_INET)
-        print(resolved_addrs)
-        for addr in resolved_addrs:
-            family, host_port = addr
-            yield self._iostream.connect(host_port)
-            break
+        timer = None
+        try:
+            if self._connecttimeout:
+                timer = Timeout(self._connecttimeout)
+                timer.start()
+            resolved_addrs = yield self._resolver.resolve(host, port, family=socket.AF_INET)
+            for addr in resolved_addrs:
+                family, host_port = addr
+                yield self._iostream.connect(host_port)
+                break
+        except TimeoutException:
+            self.close()
+            raise
+        finally:
+            if timer:
+                timer.cancel()
 
     #@synclize
     def sendall(self, buff):
@@ -289,26 +307,47 @@ class AsyncSocket(object):
 
     @synclize
     def read(self, nbytes, partial=False):
-        buff = yield self._iostream.read_bytes(nbytes, partial=partial)
-        raise Return(buff)
+        timer = None
+        try:
+            if self._readtimeout:
+                timer = Timeout(self._readtimeout)
+                timer.start()
+            buff = yield self._iostream.read_bytes(nbytes, partial=partial)
+            raise Return(buff)
+        except TimeoutException:
+            self.close()
+            raise
+        finally:
+            if timer:
+                timer.cancel()
 
     def recv(self, nbytes):
         return self.read(nbytes, partial=True)
 
     @synclize
     def readline(self, max_bytes=-1):
-        if max_bytes > 0:
-            buff = yield self._iostream.read_until('\n', max_bytes=max_bytes)
-        else:
-            buff = yield self._iostream.read_until('\n')
-        raise Return(buff)
+        timer = None
+        if self._readtimeout:
+            timer = Timeout(self._readtimeout)
+            timer.start()
+        try:
+            if max_bytes > 0:
+                buff = yield self._iostream.read_until('\n', max_bytes=max_bytes)
+            else:
+                buff = yield self._iostream.read_until('\n')
+            raise Return(buff)
+        except TimeoutException:
+            self.close()
+            raise
+        finally:
+            if timer:
+                timer.cancel()
 
     def close(self):
         self._iostream.close()
 
     def set_nodelay(self, flag):
         self._iostream.set_nodelay(flag)
-    
 
     def settimeout(self, timeout):
         pass
