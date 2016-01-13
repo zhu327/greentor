@@ -56,21 +56,21 @@ class TestHandler(Handler):
                 db.close
 
     def prepare(self):
+        self.db = None
         uri = "mysql://root:123456@10.86.11.116/mywork"
         database = create_database(uri)
         self.db = Store(database)
-        print("open store")
 
     def get(self):
         addrbooks = self.db.find(AddressBook, AddressBook.phone==u'13800138000')
         for addrbook in addrbooks:
             print(addrbook.home)
-
         self.write("ok")
 
-    def finish(self):
-        self.db.close()
-        super(TestHandler, self).finish()
+    def finish(self, chunk=None):
+        if self.db:
+            self.db.close()
+        super(TestHandler, self).finish(chunk)
 
 app = Application([(r"/", TestHandler)])
 app.listen(30001)
