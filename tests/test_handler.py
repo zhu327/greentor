@@ -62,6 +62,8 @@ class TestHandler(Handler):
         self.db = Store(database)
 
     def get(self):
+        # for row in self.test_select():
+            # print(row)
         addrbooks = self.db.find(AddressBook, AddressBook.phone==u'13800138000')
         for addrbook in addrbooks:
             print(addrbook.home)
