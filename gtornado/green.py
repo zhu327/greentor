@@ -300,7 +300,6 @@ class AsyncSocket(object):
         finally:
             if timer:
                 timer.cancel()
-
     #@synclize
     def sendall(self, buff):
         self._iostream.write(buff)

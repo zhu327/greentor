@@ -65,6 +65,7 @@ class ConnectionProxy(object):
         self._pool.release(self._raw_conn)
 
     def __getattr__(self, key):
+        print("call method", key)
         if key == "close":
             return self.close
         else:
