@@ -1,4 +1,5 @@
-# -*- coding:utf-8 -*-
+# coding: utf-8
+
 from __future__ import absolute_import
 import sys
 import socket
@@ -12,7 +13,6 @@ from tornado.concurrent import Future
 from tornado.gen import coroutine, Return
 from tornado.netutil import Resolver
 
-
 IS_PYPY = False
 try:
     import __pypy__
@@ -21,8 +21,6 @@ try:
 except:
     pass
 
-def set_resolver(resolver):
-    Resolver.configure(resolver)
 
 def enable_debug():
     if IS_PYPY:
@@ -31,6 +29,7 @@ def enable_debug():
         return
 
     import inspect
+
     def trace_green(event, args):
         src, target = args
         if event == "switch":
@@ -44,45 +43,12 @@ def enable_debug():
             for traceback in tracebacks:
                 srcfile, lineno, func_name, codesample = traceback[1:-1]
                 trace_line = '''File "%s", line %d, in %s\n%s '''
-                buff.append(trace_line % (srcfile, lineno, func_name, "".join(codesample)))
+                buff.append(trace_line %
+                            (srcfile, lineno, func_name, "".join(codesample)))
 
             print("".join(buff))
-     
-    greenlet.settrace(trace_green)    
 
-
-__all__ = ("IS_PYPY", "spawn", "AsyncSocket", "GreenTask", "synclize", 
-            "Waiter", "sleep", "Timeout", "Event", "Watcher", "Pool")
-
-
-class Hub(object):
-    def __init__(self):
-        self._greenlet = greenlet.getcurrent()
-        self._ioloop = IOLoop.current()
-
-    @property
-    def greenlet(self):
-        return self._greenlet
-
-    def switch(self):
-        self._greenlet.switch()
-
-    @property
-    def ioloop(self):
-        return self._ioloop
-
-    def run_later(self, deadline, callback, *args, **kwargs):
-        return self.ioloop.add_timeout(time.time() + deadline, 
-                                      callback, *args, **kwargs)
-
-    def run_callback(self, callback, *args, **kwargs):
-        self.ioloop.add_callback(callback, *args, **kwargs)
-            
-
-hub = Hub()
-
-def get_hub():
-    return hub
+    greenlet.settrace(trace_green)
 
 
 class GreenTask(greenlet.greenlet):
@@ -94,7 +60,7 @@ class GreenTask(greenlet.greenlet):
         self._future = Future()
         self._result = None
         self._exc_info = ()
-  
+
     @property
     def args(self):
         return self._args
@@ -140,6 +106,7 @@ class GreenTask(greenlet.greenlet):
 
 def synclize(func):
     coro = coroutine(func)
+
     @wraps(func)
     def _sync_call(*args, **kwargs):
         child_gr = greenlet.getcurrent()
@@ -156,10 +123,13 @@ def synclize(func):
 
         IOLoop.current().add_future(coro(*args, **kwargs), callback)
         return main.switch()
-    return _sync_call        
+
+    return _sync_call
+
 
 def spawn(callable_obj, *args, **kwargs):
     return GreenTask.spawn(callable_obj, *args, **kwargs).wait()
+
 
 class Waiter(object):
     def __init__(self):
@@ -190,7 +160,9 @@ def sleep(seconds):
     waiter.get()
 
 
-class TimeoutException(Exception): pass
+class TimeoutException(Exception):
+
+    pass
 
 
 class Timeout(object):
@@ -204,68 +176,18 @@ class Timeout(object):
 
     def start(self, callback=None):
         errmsg = "%s timeout, deadline is %d seconds" % (
-                str(self._greenlet), self._deadline)
+            str(self._greenlet), self._deadline)
         if callback:
-            self._callback = self._ioloop.add_timeout(self._delta, 
-                                                      callback,
+            self._callback = self._ioloop.add_timeout(self._delta, callback,
                                                       self._ex(errmsg))
         else:
-            self._callback = self._ioloop.add_timeout(self._delta, 
-                                                      self._greenlet.throw,
-                                                      self._ex(errmsg))
+            self._callback = self._ioloop.add_timeout(
+                self._delta, self._greenlet.throw, self._ex(errmsg))
 
     def cancel(self):
         assert self._callback, "Timeout not started"
         self._ioloop.remove_timeout(self._callback)
         self._greenlet = None
-
-
-class Event(object):
-    def __init__(self):
-        self._waiter = []
-        self._ioloop = IOLoop.current()
-
-    def set(self):
-        self._ioloop.add_callback(self._notify)
-
-    def wait(self, timeout=None):
-        current_greenlet = greenlet.getcurrent()
-        self._waiter.append(current_greenlet.switch)
-        waiter = Waiter()
-        if timeout:
-            timeout_checker = Timeout(timeout)
-            timeout_checker.start(current_greenlet.throw)
-            waiter.get()
-            timeout_checker.cancel()
-        else:
-            waiter.get()
-
-    def _notify(self):
-        for waiter in self._waiter:
-            waiter(self)
-
-
-class Watcher(object):
-    def __init__(self, fd, events):
-        self._fd = fd
-        self._watched_event = IOLoop.READ if events == 1 else IOLoop.WRITE
-        self._value = None
-        self._greenlet = greenlet.getcurrent()
-        self._main = self._greenlet.parent
-        self._ioloop = IOLoop.current()
-        self._callback = None
-        self._iohandler = None
-
-    def start(self, callback, args):
-        self._callback = callback
-        self._value = args
-        self._ioloop.add_handler(self._fd, self._handle_event, self._watched_event)
-
-    def _handle_event(self, fd, events):
-        self._callback(self._value)
-
-    def stop(self):
-        self._ioloop.remove_handler(self._fd)
 
 
 class AsyncSocket(object):
@@ -274,7 +196,7 @@ class AsyncSocket(object):
         self._resolver = Resolver()
         self._readtimeout = 0
         self._connecttimeout = 0
-   
+
     def set_readtimeout(self, timeout):
         self._readtimeout = timeout
 
@@ -289,7 +211,10 @@ class AsyncSocket(object):
             if self._connecttimeout:
                 timer = Timeout(self._connecttimeout)
                 timer.start()
-            resolved_addrs = yield self._resolver.resolve(host, port, family=socket.AF_INET)
+            resolved_addrs = yield self._resolver.resolve(
+                host,
+                port,
+                family=socket.AF_INET)
             for addr in resolved_addrs:
                 family, host_port = addr
                 yield self._iostream.connect(host_port)
@@ -300,7 +225,7 @@ class AsyncSocket(object):
         finally:
             if timer:
                 timer.cancel()
-    #@synclize
+
     def sendall(self, buff):
         self._iostream.write(buff)
 
@@ -331,7 +256,8 @@ class AsyncSocket(object):
             timer.start()
         try:
             if max_bytes > 0:
-                buff = yield self._iostream.read_until('\n', max_bytes=max_bytes)
+                buff = yield self._iostream.read_until('\n',
+                                                       max_bytes=max_bytes)
             else:
                 buff = yield self._iostream.read_until('\n')
             raise Return(buff)
@@ -366,51 +292,5 @@ class AsyncSocket(object):
     def makefile(self, mode, other):
         return self
 
-
-class Pool(object):
-    def __init__(self, max_size=-1, params={}):
-        self._maxsize = max_size
-        self._conn_params = params
-        self._pool = []
-        self._started = False
-        self._ioloop = IOLoop.current()
-        self._event = Event()
-        self._ioloop.add_future(
-                                spawn(self.start), 
-                                lambda future: future)
-
-    def create_raw_conn(self):
-        pass
-
-    def init_pool(self):
-        for index in range(self._maxsize):
-            conn = self.create_raw_conn()
-            self._pool.append(conn)
-
-    @property
-    def size(self):
-        return len(self._pool)
-
-    def get_conn(self):
-        if self.size > 0:
-            return self._pool.pop(0)
-        else:
-            raise Exception("no available connections", self.size)
-
-    def release(self, conn):
-        self._pool.append(conn)
-
-    def quit(self):
-        self._started = False
-        self._event.set()
-
-    def _close_all(self):
-        for conn in self._pool:
-            conn.close()
-        self._pool =  None           
-
-    def start(self):
-        self.init_pool()
-        self._started = True
-        self._event.wait()
-        self._close_all()
+    def fileno(self):
+        return self._iostream.fileno()

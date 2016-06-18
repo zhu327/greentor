@@ -1,15 +1,13 @@
 # -*- coding:utf-8 -*-
 from setuptools import setup, find_packages
 setup(
-    name = "gTornado",
-    version = "0.1",
-    packages = find_packages(),
-    install_requires = ['tornado>=4.3', 'greenlet', "pymemcache>=1.3.5", "PyMySQL>=0.6.7"],
-    author = "alexzhang",
-    author_email = "alex8224@gmail.com",
-    description = "gTornado add greenify support to tornado. inspired by motor and gevent",
-    license = "MIT",
-    keywords = "tornado greenify async",
-    url = "https://github.com/alex8224/gTornado",
-)
-
+    name="greentor",
+    version="0.1",
+    packages=find_packages(),
+    install_requires=['tornado>=4.3', 'greenlet', "PyMySQL>=0.7.4"],
+    author="Timmy",
+    author_email="zhu327@gmail.com",
+    description="Greenlet support to tornado. inspired by motor and gevent",
+    license="MIT",
+    keywords="tornado Greenlet async",
+    url="https://github.com/zhu327/greentor", )
