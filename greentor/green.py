@@ -131,6 +131,14 @@ def spawn(callable_obj, *args, **kwargs):
     return GreenTask.spawn(callable_obj, *args, **kwargs).wait()
 
 
+def green(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        return GreenTask.spawn(func, *args, **kwargs).wait()
+
+    return wrapper
+
+
 class Waiter(object):
     def __init__(self):
         self._greenlet = greenlet.getcurrent()
