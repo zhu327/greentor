@@ -21,24 +21,20 @@ from tornado.options import define, options
 define("port", default=8888, help="run on the given port", type=int)
 
 
-@green.green
-def test_mysql():
-    connect = MySQLdb.connect(user='root',
-                              passwd='',
-                              db='blog',
-                              host='localhost',
-                              port=3306)
-    cursor = connect.cursor()
-    cursor.execute('SELECT * FROM blogs LIMIT 1')
-    result = cursor.fetchone()
-    return result
-
-
 class MainHandler(tornado.web.RequestHandler):
-    @tornado.gen.coroutine
+    @green.green
     def get(self):
-        res = yield test_mysql()
-        self.write(str(res))
+        connect = MySQLdb.connect(user='root',
+                                  passwd='',
+                                  db='blog',
+                                  host='localhost',
+                                  port=3306)
+        cursor = connect.cursor()
+        cursor.execute('SELECT * FROM blogs LIMIT 1')
+        result = cursor.fetchone()
+        cursor.close()
+        connect.close()
+        self.write(str(result))
 
 
 def main():
