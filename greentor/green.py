@@ -227,9 +227,9 @@ class AsyncSocket(object):
                 family, host_port = addr
                 yield self._iostream.connect(host_port)
                 break
-        except TimeoutException:
+        except TimeoutException, e:
             self.close()
-            raise
+            raise socket.timeout(e.message)
         finally:
             if timer:
                 timer.cancel()
@@ -246,9 +246,9 @@ class AsyncSocket(object):
                 timer.start()
             buff = yield self._iostream.read_bytes(nbytes, partial=partial)
             raise Return(buff)
-        except TimeoutException:
+        except TimeoutException, e:
             self.close()
-            raise
+            raise socket.timeout(e.message)
         finally:
             if timer:
                 timer.cancel()
@@ -269,9 +269,9 @@ class AsyncSocket(object):
             else:
                 buff = yield self._iostream.read_until('\n')
             raise Return(buff)
-        except TimeoutException:
+        except TimeoutException, e:
             self.close()
-            raise
+            raise socket.timeout(e.message)
         finally:
             if timer:
                 timer.cancel()
