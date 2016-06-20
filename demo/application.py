@@ -1,7 +1,9 @@
 #!/usr/bin/env python
+# coding: utf-8
 
 from greentor import green
 from greentor import mysql
+# pymysql打上异步补丁
 mysql.patch_pymysql()
 import pymysql
 pymysql.install_as_MySQLdb()
@@ -16,6 +18,10 @@ import tornado.ioloop
 import tornado.wsgi
 import tornado.web
 
+# 包装wsgi app运行在greenlet中，使Django admin支持异步pymysql
+tornado.wsgi.WSGIContainer.__call__ = green.green(
+    tornado.wsgi.WSGIContainer.__call__)
+
 django.setup()
 
 from django.conf import settings
@@ -28,17 +34,14 @@ tornado_settings = {'debug': settings.DEBUG}
 
 
 def main():
-    urls = app.urls.urls
-
-    if settings.DEBUG:
-        tornado.wsgi.WSGIContainer.__call__ = green.green(
-            tornado.wsgi.WSGIContainer.__call__)
-        wsgi_app = tornado.wsgi.WSGIContainer(
-            django.core.handlers.wsgi.WSGIHandler())
-        urls += [('.*', tornado.web.FallbackHandler, dict(fallback=wsgi_app)),
-                 ]
-
     parse_command_line()
+
+    wsgi_app = tornado.wsgi.WSGIContainer(
+        django.core.handlers.wsgi.WSGIHandler())
+
+    urls = app.urls.urls + [('.*', tornado.web.FallbackHandler, dict(
+        fallback=wsgi_app)), ]
+
     tornado_app = tornado.web.Application(urls, **tornado_settings)
     server = tornado.httpserver.HTTPServer(tornado_app)
     server.listen(options.port)

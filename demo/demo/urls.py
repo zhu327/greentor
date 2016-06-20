@@ -1,5 +1,4 @@
 # coding: utf-8
-
 """demo URL Configuration
 
 The `urlpatterns` list routes URLs to views. For more information please see:
@@ -15,15 +14,18 @@ Including another URLconf
     1. Import the include() function: from django.conf.urls import url, include
     2. Add a URL to urlpatterns:  url(r'^blog/', include('blog.urls'))
 """
+import os
+import django
 from django.conf.urls import url
 from django.contrib import admin
-import django
-import os
-MEDIA_ROOT = os.path.join(os.path.dirname(django.__file__), 'contrib', 'admin', 'static', 'admin')
+from django.views import static
+
+MEDIA_ROOT = os.path.join(os.path.dirname(django.__file__), 'contrib', 'admin',
+                          'static', 'admin')
 
 admin.autodiscover()
 
 urlpatterns = [
-    url(r'^static/admin/(?P<path>.*)$', 'django.views.static.serve', {'document_root': MEDIA_ROOT, 'show_indexes': False}),
+    url(r'^static/admin/(?P<path>.*)$', static.serve, {'document_root': MEDIA_ROOT, 'show_indexes': False}),
     url(r'^admin/', admin.site.urls),
 ]

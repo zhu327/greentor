@@ -18,7 +18,7 @@ import tornado.gen
 
 from tornado.options import define, options
 
-define("port", default=8888, help="run on the given port", type=int)
+define("port", default=8000, help="run on the given port", type=int)
 
 
 class MainHandler(tornado.web.RequestHandler):
@@ -26,15 +26,15 @@ class MainHandler(tornado.web.RequestHandler):
     def get(self):
         connect = MySQLdb.connect(user='root',
                                   passwd='',
-                                  db='blog',
+                                  db='test',
                                   host='localhost',
                                   port=3306)
         cursor = connect.cursor()
-        cursor.execute('SELECT * FROM blogs LIMIT 1')
+        cursor.execute('SELECT * FROM app_blog LIMIT 1')
         result = cursor.fetchone()
         cursor.close()
         connect.close()
-        self.write(str(result))
+        self.finish(u'<p>{}</p><p>{}</p>'.format(result[1], result[2]))
 
 
 def main():
