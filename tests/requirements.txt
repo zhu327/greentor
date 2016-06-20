@@ -1,6 +1,4 @@
-Django==1.9.7
 greenlet==0.4.10
-greentor==0.1
 PyMySQL==0.7.4
 tornado==4.3
 git+https://github.com/zhu327/greentor.git
