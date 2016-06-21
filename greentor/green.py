@@ -392,7 +392,7 @@ class AsyncSocket(object):
 
     def recv_into(self, buff):
         expected_rbytes = len(buff)
-        data = self.read_bytes(expected_rbytes)
+        data = self.read(expected_rbytes)
         srcarray = bytearray(data)
         nbytes = len(srcarray)
         buff[0:nbytes] = srcarray

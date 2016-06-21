@@ -2,7 +2,7 @@
 
 **greentor** is a fork of [gTornado](https://github.com/alex8224/gTornado)
 
-greentor通过给pymysql打补丁,使pymysql在Tornado中的运行过程变为异步IO,相比与其它支持Tornado的mysql驱动,greentor有以下不同
+greentor通过给pymysql打补丁,使pymysql在Tornado中的运行过程变为异步IO,相比于其它支持Tornado的mysql驱动,greentor有以下不同
 
 1. 同步pymysql的写法
 2. 理论上可以支持各种ORM的调用异步
@@ -27,9 +27,9 @@ mysql.patch_pymysql()
 ```
 
 1. `green.enable_debug()`
-  开启greenlet的调试,可以查看greenlet switch过程,非必须  
+  非必须,开启greenlet调试模式,可以打印greenlet switch过程  
 2. `mysql.patch_pymysql()`
-  给pymysql打异步补丁,打上补丁后pymysql依赖于Tornado,在Tornado的IOLoop start后才能正常使用
+  给pymysql打异步补丁,异步的pymysql依赖于Tornado,在Tornado的IOLoop start后才能正常使用
 
 #### 在`RequestHandler`中使用
 
@@ -122,4 +122,6 @@ class MainHandler(tornado.web.RequestHandler):
 
 ### 实例
 
-在tests目录下有一个使用纯pymysql的实例,demo目录下有一个完整的 Tornado + Django ORM 的环境,具体可以查看demo目录下的[README](https://github.com/zhu327/greentor/tree/master/demo)
+在tests目录下有一个使用纯pymysql调用的实例
+
+demo目录下有一个完整的 Tornado + Django ORM 的环境,具体可以查看demo目录下的[README](https://github.com/zhu327/greentor/tree/master/demo)
