@@ -1,7 +1,5 @@
 ## greentor
 
-***
-
 **greentor** is a fork of [gTornado](https://github.com/alex8224/gTornado)
 
 greentor通过给pymysql打补丁,使pymysql在Tornado中的运行过程变为异步IO,相比与其它支持Tornado的mysql驱动,greentor有以下不同

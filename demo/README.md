@@ -1,7 +1,5 @@
 ## Tornado + Django ORM
 
-***
-
 这是一个 Tornado + Django ORM 运行环境的demo,demo目录是Django的配置文件目录,app目录是Django的app
 
 不同与Django app目录下的views.py,我将其重命名为handlers.py,是Tornado的RequestHanlder的集合
