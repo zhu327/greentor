@@ -3,7 +3,6 @@
 from __future__ import absolute_import
 import sys
 import socket
-import errno
 import time
 import greenlet
 from functools import wraps
@@ -12,8 +11,7 @@ from tornado.ioloop import IOLoop
 from tornado.concurrent import Future
 from tornado.gen import coroutine, Return
 from tornado.netutil import Resolver
-from tornado.iostream import (IOStream as BaseIOStream, StreamClosedError,
-                              _ERRNO_WOULDBLOCK)
+from tornado.iostream import IOStream
 
 IS_PYPY = False
 try:
@@ -200,125 +198,6 @@ class Timeout(object):
         self._greenlet = None
 
 
-class IOStream(BaseIOStream):
-    def _handle_events(self, fd, events):
-        if self._closed:
-            return
-        try:
-            if self._connecting:
-                self._handle_connect()
-            if self._closed:
-                return
-            if events & self.io_loop.READ:
-                self._handle_read()
-            if self._closed:
-                return
-            if events & self.io_loop.WRITE:
-                self._handle_write()
-            if self._closed:
-                return
-            if events & self.io_loop.ERROR:
-                self.error = self.get_fd_error()
-                self.io_loop.add_callback(self.close)
-                return
-        except Exception:
-            self.close(exc_info=True)
-            raise
-
-    def _handle_connect(self):
-        super(IOStream, self)._handle_connect()
-
-        if not self.closed():
-            self._state = self.io_loop.ERROR | self.io_loop.READ
-            self.io_loop.update_handler(self.fileno(), self._state)
-
-    def _handle_read(self):
-        chunk = True
-
-        while True:
-            try:
-                chunk = self.socket.recv(self.read_chunk_size)
-                if not chunk:
-                    break
-                self._read_buffer.append(chunk)
-                self._read_buffer_size += len(chunk)
-            except (socket.error, IOError, OSError) as e:
-                en = e.errno if hasattr(e, 'errno') else e.args[0]
-                if en in _ERRNO_WOULDBLOCK:
-                    break
-
-                if en == errno.EINTR:
-                    continue
-
-                self.close(exc_info=True)
-                return
-
-        if (self._read_future is not None and
-                self._read_buffer_size >= self._read_bytes):
-            future, self._read_future = self._read_future, None
-            data = b"".join(self._consume(self._read_bytes))
-            self._read_bytes = 0
-            future.set_result(data)
-
-        if not chunk:
-            self.close()
-            return
-
-    def read_bytes(self, num_bytes):
-        assert self._read_future is None, "Already reading"
-        if self._closed:
-            raise StreamClosedError(real_error=self.error)
-
-        future = self._read_future = Future()
-        self._read_bytes = num_bytes
-        self._read_partial = False
-        if self._read_buffer_size >= self._read_bytes:
-            future, self._read_future = self._read_future, None
-            data = b"".join(self._consume(self._read_bytes))
-            self._read_bytes = 0
-            future.set_result(data)
-        return future
-
-    def _handle_write(self):
-        while self._write_buffer:
-            try:
-                data = self._write_buffer.popleft()
-                num_bytes = self.socket.send(data)
-                self._write_buffer_size -= num_bytes
-                if num_bytes < len(data):
-                    self._write_buffer.appendleft(data[num_bytes:])
-                    return
-            except (socket.error, IOError, OSError) as e:
-                en = e.errno if hasattr(e, 'errno') else e.args[0]
-                if en in _ERRNO_WOULDBLOCK:
-                    self._write_buffer.appendleft(data)
-                    break
-
-                self.close(exc_info=True)
-                return
-
-        if not self._write_buffer:
-            if self._state & self.io_loop.WRITE:
-                self._state = self._state & ~self.io_loop.WRITE
-                self.io_loop.update_handler(self.fileno(), self._state)
-
-    def write(self, data):
-        assert isinstance(data, bytes)
-        if self._closed:
-            raise StreamClosedError(real_error=self.error)
-
-        if data:
-            self._write_buffer.append(data)
-            self._write_buffer_size += len(data)
-
-        if not self._connecting:
-            self._handle_write()
-            if self._write_buffer:
-                if not self._state & self.io_loop.WRITE:
-                    self._state = self._state | self.io_loop.WRITE
-                    self.io_loop.update_handler(self.fileno(), self._state)
-
-
 class AsyncSocket(object):
     def __init__(self, sock):
         self._iostream = IOStream(sock)
@@ -348,9 +227,9 @@ class AsyncSocket(object):
                 family, host_port = addr
                 yield self._iostream.connect(host_port)
                 break
-        except TimeoutException, e:
+        except TimeoutException:
             self.close()
-            raise socket.timeout(e.message)
+            raise
         finally:
             if timer:
                 timer.cancel()
@@ -365,17 +244,36 @@ class AsyncSocket(object):
             if self._readtimeout:
                 timer = Timeout(self._readtimeout)
                 timer.start()
-            buff = yield self._iostream.read_bytes(nbytes)
+            buff = yield self._iostream.read_bytes(nbytes, partial=partial)
             raise Return(buff)
-        except TimeoutException, e:
+        except TimeoutException:
             self.close()
-            raise socket.timeout(e.message)
+            raise
         finally:
             if timer:
                 timer.cancel()
 
     def recv(self, nbytes):
-        return self.read_bytes(nbytes)
+        return self.read(nbytes, partial=True)
+
+    @synclize
+    def readline(self, max_bytes=-1):
+        timer = None
+        if self._readtimeout:
+            timer = Timeout(self._readtimeout)
+            timer.start()
+        try:
+            if max_bytes > 0:
+                buff = yield self._iostream.read_until('\n', max_bytes=max_bytes)
+            else:
+                buff = yield self._iostream.read_until('\n')
+            raise Return(buff)
+        except TimeoutException:
+            self.close()
+            raise
+        finally:
+            if timer:
+                timer.cancel()
 
     def close(self):
         self._iostream.close()
@@ -392,7 +290,7 @@ class AsyncSocket(object):
 
     def recv_into(self, buff):
         expected_rbytes = len(buff)
-        data = self.read(expected_rbytes)
+        data = self.read(expected_rbytes, True)
         srcarray = bytearray(data)
         nbytes = len(srcarray)
         buff[0:nbytes] = srcarray
