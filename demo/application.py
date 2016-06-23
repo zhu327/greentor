@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-import monkey_patch
+import core.monkey_patch
 
 import os
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "demo.settings")

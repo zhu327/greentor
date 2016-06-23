@@ -3,6 +3,7 @@
 import tornado.web
 from greentor import green
 
+from core.handlers import BaseRequestHandler
 from .models import Blog
 
 
@@ -11,8 +12,8 @@ class HelloHandler(tornado.web.RequestHandler):
         self.write('Hello, world ! \n')
 
 
-class BlogHandler(tornado.web.RequestHandler):
+class BlogHandler(BaseRequestHandler):
     @green.green
     def get(self):
         blog = Blog.objects.first()
-        self.write(blog.content)
+        self.finish(blog.content)
