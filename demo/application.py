@@ -1,29 +1,20 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-from greentor import green
-from greentor import mysql
-# pymysql打上异步补丁
-mysql.patch_pymysql()
-import pymysql
-pymysql.install_as_MySQLdb()
+import monkey_patch
 
 import os
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "demo.settings")
+import django
+django.setup()
 
 from tornado.options import options, define, parse_command_line
-import django.core.handlers.wsgi
 import tornado.httpserver
 import tornado.ioloop
 import tornado.wsgi
 import tornado.web
 
-# 包装wsgi app运行在greenlet中，使Django admin支持异步pymysql
-tornado.wsgi.WSGIContainer.__call__ = green.green(
-    tornado.wsgi.WSGIContainer.__call__)
-
-django.setup()
-
+import django.core.handlers.wsgi
 from django.conf import settings
 
 import app.urls
