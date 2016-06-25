@@ -264,7 +264,8 @@ class AsyncSocket(object):
             timer.start()
         try:
             if max_bytes > 0:
-                buff = yield self._iostream.read_until('\n', max_bytes=max_bytes)
+                buff = yield self._iostream.read_until('\n',
+                                                       max_bytes=max_bytes)
             else:
                 buff = yield self._iostream.read_until('\n')
             raise Return(buff)
@@ -301,3 +302,83 @@ class AsyncSocket(object):
 
     def fileno(self):
         return self._iostream.fileno()
+
+
+class Event(object):
+    def __init__(self):
+        self._waiter = []
+        self._ioloop = IOLoop.current()
+
+    def set(self):
+        self._ioloop.add_callback(self._notify)
+
+    def wait(self, timeout=None):
+        current_greenlet = greenlet.getcurrent()
+        self._waiter.append(current_greenlet.switch)
+        waiter = Waiter()
+        if timeout:
+            timeout_checker = Timeout(timeout)
+            timeout_checker.start(current_greenlet.throw)
+            waiter.get()
+            timeout_checker.cancel()
+        else:
+            waiter.get()
+
+    def _notify(self):
+        for waiter in self._waiter:
+            waiter(self)
+
+
+class Pool(object):
+    def __init__(self, max_size=-1, params={}):
+        self._maxsize = max_size
+        self._conn_params = params
+        self._pool = []
+        self._wait = []
+        self._started = False
+        self._ioloop = IOLoop.current()
+        self._event = Event()
+        self._ioloop.add_future(spawn(self.start), lambda future: future)
+
+    def create_raw_conn(self):
+        pass
+
+    def init_pool(self):
+        for index in range(self._maxsize):
+            conn = self.create_raw_conn()
+            self._pool.append(conn)
+
+    @property
+    def size(self):
+        return len(self._pool)
+
+    def get_conn(self):
+        while 1:
+            if self.size > 0:
+                return self._pool.pop(0)
+            else:
+                child_gr = greenlet.getcurrent()
+                self._wait.append(child_gr.switch)
+                main = child_gr.parent
+                main.switch()
+
+    def release(self, conn):
+        self._pool.append(conn)
+        if self._wait:
+            callback = self._wait.pop(0)
+            callback()
+
+    def quit(self):
+        self._started = False
+        self._event.set()
+
+    def _close_all(self):
+        for conn in self._pool:
+            conn.close()
+        self._pool = None
+
+    def start(self):
+        self.init_pool()
+        self._started = True
+        self._event.wait()
+        self._close_all()
