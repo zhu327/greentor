@@ -7,11 +7,11 @@ import errno
 import traceback
 
 from pymysql import err
-from pymysql.connections import DEBUG
+from pymysql.connections import DEBUG, Connection
 
-from .green import AsyncSocket
+from .green import AsyncSocket, Pool
 
-__all__ = ('patch_pymysql', )
+__all__ = ('patch_pymysql', 'ConnectionPool')
 
 
 def _connect(self, sock=None):
@@ -82,6 +82,20 @@ def _read_bytes(self, num_bytes):
         raise err.OperationalError(
             2013, "Lost connection to MySQL server during query")
     return data
+
+
+class ConnectionPool(Pool):
+    def __init__(self, max_size=-1, mysql_params={}):
+        super(ConnectionPool, self).__init__(max_size, mysql_params)
+
+    def create_raw_conn(self):
+        return Connection(
+            host=self._conn_params["host"],
+            port=self._conn_params["port"],
+            user=self._conn_params["user"],
+            db=self._conn_params["db"],
+            passwd=self._conn_params["passwd"],
+            charset=self._conn_params.get("charset", "utf8"))
 
 
 def patch_pymysql():
