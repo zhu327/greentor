@@ -5,11 +5,12 @@ import sys
 import socket
 import errno
 import traceback
+import time
 
 from pymysql import err
 from pymysql.connections import DEBUG, Connection
 
-from .green import AsyncSocket, Pool
+from .green import AsyncSocket, Pool, GreenTask
 
 __all__ = ('patch_pymysql', 'ConnectionPool')
 
@@ -85,17 +86,28 @@ def _read_bytes(self, num_bytes):
 
 
 class ConnectionPool(Pool):
-    def __init__(self, max_size=32, mysql_params={}):
+    def __init__(self, max_size=32, keep_alive=7200, mysql_params={}):
         super(ConnectionPool, self).__init__(max_size=max_size, params=mysql_params)
+        self._keep_alive = keep_alive # 为避免连接自动断开，配置连接ping周期
 
     def create_raw_conn(self):
-        return Connection(
+        conn = Connection(
             host=self._conn_params["host"],
             port=self._conn_params["port"],
             user=self._conn_params["user"],
             db=self._conn_params["db"],
             passwd=self._conn_params["passwd"],
             charset=self._conn_params.get("charset", "utf8"))
+        if self._keep_alive:
+            self._ioloop.add_timeout(time.time()+self._keep_alive, self._ping, conn)
+        return conn
+
+    def _ping(self, conn):
+        if conn in self._pool:
+            self._pool.remove(conn)
+            GreenTask.spawn(conn.ping)
+            self.release(conn)
+        self._ioloop.add_timeout(time.time()+self._keep_alive, self._ping, conn)
 
 
 def patch_pymysql():

@@ -37,7 +37,7 @@ class MainHandler(tornado.web.RequestHandler):
         self.finish(u'<p>{}</p><p>{}</p>'.format(result[1], result[2]))
 
 
-pool = mysql.ConnectionPool(32, {
+pool = mysql.ConnectionPool(mysql_params={
     'user': 'root',
     'passwd': '',
     'db': 'test',
