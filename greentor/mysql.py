@@ -85,8 +85,8 @@ def _read_bytes(self, num_bytes):
 
 
 class ConnectionPool(Pool):
-    def __init__(self, max_size=-1, mysql_params={}):
-        super(ConnectionPool, self).__init__(max_size, mysql_params)
+    def __init__(self, max_size=32, mysql_params={}):
+        super(ConnectionPool, self).__init__(max_size=max_size, params=mysql_params)
 
     def create_raw_conn(self):
         return Connection(

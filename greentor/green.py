@@ -6,6 +6,7 @@ import socket
 import time
 import greenlet
 from functools import wraps
+from collections import deque
 
 from tornado.ioloop import IOLoop
 from tornado.concurrent import Future
@@ -330,11 +331,13 @@ class Event(object):
 
 
 class Pool(object):
-    def __init__(self, max_size=-1, params={}):
+    def __init__(self, max_size=32, wait_timeout=8, params={}):
         self._maxsize = max_size
         self._conn_params = params
-        self._pool = []
-        self._wait = []
+        self._pool = deque(maxlen=self._maxsize)
+        self._wait = deque()
+        self._wait_timeout = wait_timeout
+        self._count = 0
         self._started = False
         self._ioloop = IOLoop.current()
         self._event = Event()
@@ -344,9 +347,9 @@ class Pool(object):
         pass
 
     def init_pool(self):
-        for index in range(self._maxsize):
-            conn = self.create_raw_conn()
-            self._pool.append(conn)
+        self._count += 1
+        conn = self.create_raw_conn()
+        self._pool.append(conn)
 
     @property
     def size(self):
@@ -354,19 +357,34 @@ class Pool(object):
 
     def get_conn(self):
         while 1:
-            if self.size > 0:
-                return self._pool.pop(0)
+            if self._pool:
+                return self._pool.popleft()
+            elif self._count < self._maxsize:
+                self.init_pool()
             else:
-                child_gr = greenlet.getcurrent()
-                self._wait.append(child_gr.switch)
-                main = child_gr.parent
-                main.switch()
+                self.wait_conn()
+
+    def wait_conn(self):
+        timer = None
+        child_gr = greenlet.getcurrent()
+        main = child_gr.parent
+        try:
+            if self._wait_timeout:
+                timer = Timeout(self._wait_timeout)
+                timer.start()
+            self._wait.append(child_gr.switch)
+            main.switch()
+        except TimeoutException, e:
+            raise Exception("timeout wait connections, connections size %s", self.size)
+        finally:
+            if timer:
+                timer.cancel()
 
     def release(self, conn):
         self._pool.append(conn)
         if self._wait:
-            callback = self._wait.pop(0)
-            callback()
+            callback = self._wait.popleft()
+            self._ioloop.add_callback(callback)
 
     def quit(self):
         self._started = False
