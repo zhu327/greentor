@@ -1,6 +1,6 @@
 # coding: utf-8
 
-from __future__ import absolute_import, print_function
+from __future__ import absolute_import
 import sys
 import socket
 import errno
@@ -10,7 +10,7 @@ import time
 from pymysql import err
 from pymysql.connections import DEBUG, Connection
 
-from .green import AsyncSocket, Pool, GreenTask
+from .green import AsyncSocket, Pool, green
 
 __all__ = ('patch_pymysql', 'ConnectionPool')
 
@@ -58,7 +58,7 @@ def _connect(self, sock=None):
             # Keep original exception and traceback to investigate error.
             exc.original_exception = e
             exc.traceback = traceback.format_exc()
-            if DEBUG: print(exc.traceback)
+            if DEBUG: print exc.traceback
             raise exc
 
         # If e is neither DatabaseError or IOError, It's a bug.
@@ -102,10 +102,11 @@ class ConnectionPool(Pool):
             self._ioloop.add_timeout(time.time()+self._keep_alive, self._ping, conn)
         return conn
 
+    @green
     def _ping(self, conn):
         if conn in self._pool:
             self._pool.remove(conn)
-            GreenTask.spawn(conn.ping)
+            conn.ping()
             self.release(conn)
         self._ioloop.add_timeout(time.time()+self._keep_alive, self._ping, conn)
 
