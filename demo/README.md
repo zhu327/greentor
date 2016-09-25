@@ -1,6 +1,6 @@
 ## Tornado + Django ORM
 
-这是一个 Tornado + Django ORM 运行环境的demo 
+这是一个 Tornado + Django ORM 运行环境的demo
 
 demo目录是Django的配置文件目录,app目录是Django的app
 
@@ -15,6 +15,16 @@ python application.py
 在运行tornado的同时,Django admin也是可以访问的
 
 ### 说明
+
+主要的补丁都在core目录下
+
+```
+.
+├── __init__.py
+├── base.py // Django mysql connection pool backend 连接池支持
+├── handlers.py // BaseRequestHandler 基类
+└── monkey_patch.py // 一系列的补丁
+```
 
 ```python
 import tornado.web
