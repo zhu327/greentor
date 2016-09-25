@@ -91,13 +91,7 @@ class ConnectionPool(Pool):
         self._keep_alive = keep_alive # 为避免连接自动断开，配置连接ping周期
 
     def create_raw_conn(self):
-        conn = Connection(
-            host=self._conn_params["host"],
-            port=self._conn_params["port"],
-            user=self._conn_params["user"],
-            db=self._conn_params["db"],
-            passwd=self._conn_params["passwd"],
-            charset=self._conn_params.get("charset", "utf8"))
+        conn = Connection(**self._conn_params)
         if self._keep_alive:
             self._ioloop.add_timeout(time.time()+self._keep_alive, self._ping, conn)
         return conn

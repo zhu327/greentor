@@ -1,9 +1,9 @@
 # coding: utf-8
 
 import tornado.web
-from django.db import connection
+from django.db import connections
 
 
 class BaseRequestHandler(tornado.web.RequestHandler):
     def on_finish(self):
-        connection.close()
+        connections.close_all()

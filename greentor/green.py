@@ -391,12 +391,12 @@ class Pool(object):
         self._event.set()
 
     def _close_all(self):
-        for conn in self._pool:
+        for conn in tuple(self._pool):
             conn.close()
         self._pool = None
 
     def start(self):
-        self.init_pool()
+        # self.init_pool()
         self._started = True
         self._event.wait()
         self._close_all()
