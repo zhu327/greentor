@@ -7,7 +7,10 @@ import time
 import greenlet
 from functools import wraps
 from collections import deque
-from cStringIO import StringIO
+try:
+    from cStringIO import StringIO
+except ImportError:
+    from StringIO import StringIO
 
 from tornado.ioloop import IOLoop
 from tornado.concurrent import Future

@@ -9,6 +9,8 @@ greentor通过给pymysql打补丁,使pymysql在Tornado中的运行过程变为�
 
 感谢[@alex8224](https://github.com/alex8224)和他的[gTornado](https://github.com/alex8224/gTornado)
 
+感谢[@snower](https://github.com/snower)，参考他的[TorMySQL](https://github.com/snower/TorMySQL)优化了IOStream的读写性能
+
 ### 安装
 
 ```shell
