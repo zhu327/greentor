@@ -1,3 +1,4 @@
+# coding: utf-8
 """
 Django settings for demo project.
 
@@ -81,6 +82,10 @@ DATABASES = {
         'ENGINE': 'core',
         'USER': 'root',
         'PASSWORD': '',
+        'OPTIONS': {
+            'MAX_SIZE': 32, # 连接池最大连接数
+            'KEEP_ALIVE': 7200, # 连接保持ping周期
+        },
     }
 }
 
