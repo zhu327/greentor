@@ -4,6 +4,7 @@ from __future__ import absolute_import
 import sys
 import socket
 import time
+import errno
 import greenlet
 from functools import wraps
 from collections import deque
