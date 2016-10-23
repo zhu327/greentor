@@ -9,5 +9,6 @@ class BaseRequestHandler(tornado.web.RequestHandler):
     def on_finish(self):
         connections.close_all()
 
-
-BaseRequestHandler._execute = green.green(BaseRequestHandler._execute)
+    @green.green
+    def _execute(self, *args, **kwargs):
+        return super(BaseRequestHandler, self)._execute(*args, **kwargs)
