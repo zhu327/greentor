@@ -53,8 +53,8 @@ def _connect(self, sock=None):
 
         if isinstance(e, (OSError, IOError, socket.error)):
             exc = err.OperationalError(
-                2003, "Can't connect to MySQL server on %r (%s)" % (
-                    self.host, e))
+                2003, "Can't connect to MySQL server on %r (%s)" % (self.host,
+                                                                    e))
             # Keep original exception and traceback to investigate error.
             exc.original_exception = e
             exc.traceback = traceback.format_exc()
@@ -87,13 +87,15 @@ def _read_bytes(self, num_bytes):
 
 class ConnectionPool(Pool):
     def __init__(self, max_size=32, keep_alive=7200, mysql_params={}):
-        super(ConnectionPool, self).__init__(max_size=max_size, params=mysql_params)
-        self._keep_alive = keep_alive # 为避免连接自动断开，配置连接ping周期
+        super(ConnectionPool, self).__init__(max_size=max_size,
+                                             params=mysql_params)
+        self._keep_alive = keep_alive  # 为避免连接自动断开，配置连接ping周期
 
     def create_raw_conn(self):
         conn = Connection(**self._conn_params)
         if self._keep_alive:
-            self._ioloop.add_timeout(time.time()+self._keep_alive, self._ping, conn)
+            self._ioloop.add_timeout(time.time() + self._keep_alive,
+                                     self._ping, conn)
         return conn
 
     @green
@@ -102,7 +104,8 @@ class ConnectionPool(Pool):
             self._pool.remove(conn)
             conn.ping()
             self.release(conn)
-        self._ioloop.add_timeout(time.time()+self._keep_alive, self._ping, conn)
+        self._ioloop.add_timeout(time.time() + self._keep_alive, self._ping,
+                                 conn)
 
 
 def patch_pymysql():

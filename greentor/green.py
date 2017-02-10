@@ -18,7 +18,7 @@ from tornado.concurrent import Future
 from tornado.gen import coroutine, Return
 from tornado.netutil import Resolver
 from tornado.iostream import (IOStream as BaseIOStream, StreamClosedError,
-    errno_from_exception, _ERRNO_WOULDBLOCK)
+                              _ERRNO_WOULDBLOCK)
 
 IS_PYPY = False
 try:
@@ -190,8 +190,8 @@ class Timeout(object):
         self._ioloop = IOLoop.current()
 
     def start(self, callback=None):
-        errmsg = "%s timeout, deadline is %d seconds" % (
-            str(self._greenlet), self._deadline)
+        errmsg = "%s timeout, deadline is %d seconds" % (str(self._greenlet),
+                                                         self._deadline)
         if callback:
             self._callback = self._ioloop.add_timeout(self._delta, callback,
                                                       self._ex(errmsg))
@@ -381,7 +381,8 @@ class AsyncSocket(object):
             self._rbuffer_size = 0
 
         if nbytes <= self._iostream._read_buffer_size:
-            data, data_len = b''.join(self._iostream._read_buffer), self._iostream._read_buffer_size
+            data, data_len = b''.join(
+                self._iostream._read_buffer), self._iostream._read_buffer_size
             self._iostream._read_buffer.clear()
             self._iostream._read_buffer_size = 0
 
@@ -504,7 +505,7 @@ class Pool(object):
             elif self._count < self._maxsize:
                 self.init_pool()
             else:
-                self.wait_conn()
+                return self.wait_conn()
 
     def wait_conn(self):
         timer = None
@@ -515,18 +516,20 @@ class Pool(object):
                 timer = Timeout(self._wait_timeout)
                 timer.start()
             self._wait.append(child_gr.switch)
-            main.switch()
-        except TimeoutException, e:
-            raise Exception("timeout wait connections, connections size %s", self.size)
+            return main.switch()
+        except TimeoutException:
+            raise Exception("timeout wait connections, connections size %s",
+                            self.size)
         finally:
             if timer:
                 timer.cancel()
 
     def release(self, conn):
-        self._pool.append(conn)
         if self._wait:
-            callback = self._wait.popleft()
-            self._ioloop.add_callback(callback)
+            switch = self._wait.popleft()
+            self._ioloop.add_callback(switch, conn)
+        else:
+            self._pool.append(conn)
 
     def quit(self):
         self._started = False

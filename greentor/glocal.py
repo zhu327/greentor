@@ -1,7 +1,8 @@
+# coding: utf-8
 
 from greenlet import getcurrent
 
-__all__ = ['local']
+__all__ = ('local',)
 
 
 def _get_local_dict():
@@ -13,7 +14,6 @@ def _get_local_dict():
 
 
 class local(object):
-
     def __getattribute__(self, attr):
         local_dict = _get_local_dict()
         try:
