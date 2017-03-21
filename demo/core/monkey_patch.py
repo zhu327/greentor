@@ -1,10 +1,15 @@
 # coding: utf-8
 
-from greentor import mysql
-# pymysql打上异步补丁
-mysql.patch_pymysql()
-import pymysql
-pymysql.install_as_MySQLdb()
+# from greentor import mysql
+# # pymysql打上异步补丁
+# mysql.patch_pymysql()
+# import pymysql
+# pymysql.install_as_MySQLdb()
+
+import greenify
+greenify.greenify()
+
+assert greenify.patch_lib("/usr/lib/x86_64-linux-gnu/libmysqlclient.so")
 
 from greentor import green
 import tornado.wsgi

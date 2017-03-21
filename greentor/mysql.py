@@ -85,6 +85,9 @@ def _read_bytes(self, num_bytes):
     return data
 
 
+import MySQLdb
+
+
 class ConnectionPool(Pool):
     def __init__(self, max_size=32, keep_alive=7200, mysql_params={}):
         super(ConnectionPool, self).__init__(max_size=max_size,
@@ -92,7 +95,7 @@ class ConnectionPool(Pool):
         self._keep_alive = keep_alive  # 为避免连接自动断开，配置连接ping周期
 
     def create_raw_conn(self):
-        conn = Connection(**self._conn_params)
+        conn = MySQLdb.connect(**self._conn_params)
         if self._keep_alive:
             self._ioloop.add_timeout(time.time() + self._keep_alive,
                                      self._ping, conn)

@@ -473,6 +473,29 @@ class Event(object):
             waiter(self)
 
 
+class Watcher(object):
+    def __init__(self, fd, events):
+        self._fd = fd
+        self._watched_event = IOLoop.READ if events == 1 else IOLoop.WRITE
+        self._value = None
+        self._greenlet = greenlet.getcurrent()
+        self._main = self._greenlet.parent
+        self._ioloop = IOLoop.current()
+        self._callback = None
+        self._iohandler = None
+
+    def start(self, callback, args):
+        self._callback = callback
+        self._value = args
+        self._ioloop.add_handler(self._fd, self._handle_event, self._watched_event)
+
+    def _handle_event(self, fd, events):
+        self._callback(self._value)
+
+    def stop(self):
+        self._ioloop.remove_handler(self._fd)
+
+
 class Pool(object):
     def __init__(self, max_size=32, wait_timeout=8, params={}):
         self._maxsize = max_size
