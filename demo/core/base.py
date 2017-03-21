@@ -1,5 +1,6 @@
 # coding: utf-8
 
+import MySQLdb
 from django.db.backends.mysql.base import (
     SafeText, SafeBytes, six, DatabaseWrapper as BaseDatabaseWrapper)
 from greentor.mysql import ConnectionPool
@@ -15,6 +16,7 @@ class DatabaseWrapper(BaseDatabaseWrapper):
         # conn = Database.connect(**conn_params)
         if not self.alias in self.pools:
             self.pools[self.alias] = ConnectionPool(
+                connection_class=MySQLdb.connect,
                 max_size=conn_params.pop('MAX_SIZE', 32),
                 keep_alive=conn_params.pop('KEEP_ALIVE', 7200),
                 mysql_params=conn_params)
