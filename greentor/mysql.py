@@ -86,7 +86,11 @@ def _read_bytes(self, num_bytes):
 
 
 class ConnectionPool(Pool):
-    def __init__(self, connection_class=Connection, max_size=32, keep_alive=7200, mysql_params={}):
+    def __init__(self,
+                 connection_class=Connection,
+                 max_size=32,
+                 keep_alive=7200,
+                 mysql_params={}):
         super(ConnectionPool, self).__init__(max_size=max_size,
                                              params=mysql_params)
         self._keep_alive = keep_alive  # 为避免连接自动断开，配置连接ping周期
