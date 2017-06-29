@@ -93,19 +93,21 @@ class ConnectionPool(Pool):
 
     def create_raw_conn(self):
         conn = Connection(**self._conn_params)
-        if self._keep_alive:
-            self._ioloop.add_timeout(time.time() + self._keep_alive,
-                                     self._ping, conn)
+        conn._reconnect_time = self._reconnect_timestamp()
         return conn
 
-    @green
-    def _ping(self, conn):
-        if conn in self._pool:
-            self._pool.remove(conn)
-            conn.ping()
-            self.release(conn)
-        self._ioloop.add_timeout(time.time() + self._keep_alive, self._ping,
-                                 conn)
+    def _reconnect_timestamp(self):
+        return time.time() + self._keep_alive
+
+    def get_conn(self):
+        conn = super(ConnectionPool, self).get_conn()
+        if conn._reconnect_time < time.time():
+            conn.ping() # 超过重连时间,需要尝试重连一下
+        return conn
+
+    def release(self, conn):
+        conn._reconnect_time = self._reconnect_timestamp()
+        super(ConnectionPool, self).release(conn)
 
 
 def patch_pymysql():
