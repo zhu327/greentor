@@ -58,7 +58,7 @@ def _connect(self, sock=None):
             # Keep original exception and traceback to investigate error.
             exc.original_exception = e
             exc.traceback = traceback.format_exc()
-            if DEBUG: print exc.traceback
+            if DEBUG: print(exc.traceback)
             raise exc
 
         # If e is neither DatabaseError or IOError, It's a bug.
