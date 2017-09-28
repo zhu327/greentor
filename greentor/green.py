@@ -9,9 +9,9 @@ import greenlet
 from functools import wraps
 from collections import deque
 try:
-    from cStringIO import StringIO
-except ImportError:
     from StringIO import StringIO
+except ImportError:
+    from io import StringIO
 
 from tornado.ioloop import IOLoop
 from tornado.concurrent import Future
@@ -360,7 +360,7 @@ class AsyncSocket(object):
                 family, host_port = addr
                 yield self._iostream.connect(host_port)
                 break
-        except TimeoutException, e:
+        except TimeoutException as e:
             self.close()
             raise socket.timeout(e.message)
         finally:
@@ -410,7 +410,7 @@ class AsyncSocket(object):
                 timer.start()
             data = yield self._iostream.read_bytes(nbytes)
             raise Return(data)
-        except TimeoutException, e:
+        except TimeoutException as e:
             self.close()
             raise socket.timeout(e.message)
         finally:
